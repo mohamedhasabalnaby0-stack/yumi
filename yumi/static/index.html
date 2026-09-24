@@ -1,0 +1,3186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Yumi</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #08090d;
+      font-family: Inter, Arial, sans-serif;
+      color: white;
+    }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* -------------------------
+       BOOT SCREEN
+    ------------------------- */
+
+    #boot {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      background:
+        radial-gradient(
+          circle at center,
+          rgba(95, 75, 150, 0.22),
+          rgba(8, 9, 13, 0.98) 65%
+        );
+    }
+
+    .boot-card {
+      width: min(420px, 88vw);
+      padding: 28px;
+
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 20px;
+
+      background: rgba(18, 19, 27, 0.82);
+      backdrop-filter: blur(20px);
+
+      text-align: center;
+      box-shadow: 0 20px 80px rgba(0, 0, 0, 0.4);
+    }
+
+    .boot-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .boot-text {
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 20px;
+    }
+
+    #progress {
+      width: 100%;
+      height: 5px;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    #progress-bar {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #9f7aea, #f687b3);
+      transition: width 0.2s ease;
+    }
+
+    #boot-error {
+      display: none;
+      margin-top: 16px;
+      color: #ff8c8c;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    /* -------------------------
+       CHAT
+    ------------------------- */
+
+    #chat {
+      position: absolute;
+      z-index: 10;
+
+      left: 20px;
+      right: 20px;
+      bottom: 20px;
+
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+
+      pointer-events: none;
+    }
+
+    #messages {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+
+      max-height: 240px;
+      overflow-y: auto;
+
+      scrollbar-width: none;
+    }
+
+    #messages::-webkit-scrollbar {
+      display: none;
+    }
+
+    .message {
+      max-width: min(650px, 90vw);
+
+      padding: 11px 15px;
+
+      border-radius: 16px;
+
+      background: rgba(17, 18, 25, 0.76);
+      backdrop-filter: blur(18px);
+
+      border: 1px solid rgba(255, 255, 255, 0.07);
+
+      line-height: 1.45;
+      font-size: 14px;
+
+      animation: messageIn 0.25s ease;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: rgba(100, 80, 160, 0.35);
+    }
+
+    .message.yumi {
+      background: rgba(25, 26, 35, 0.8);
+    }
+
+    @keyframes messageIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    #composer {
+      display: flex;
+      gap: 8px;
+
+      pointer-events: auto;
+
+      max-width: 850px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    #message-input {
+      flex: 1;
+
+      min-width: 0;
+
+      padding: 13px 16px;
+
+      color: white;
+      background: rgba(15, 16, 22, 0.86);
+
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+
+      outline: none;
+
+      backdrop-filter: blur(15px);
+    }
+
+    #message-input:focus {
+      border-color: rgba(180, 140, 255, 0.5);
+    }
+
+    #send {
+      border: none;
+      border-radius: 15px;
+
+      padding: 0 20px;
+
+      color: white;
+      background: linear-gradient(135deg, #805ad5, #b83280);
+
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #send:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    /* -------------------------
+       STATUS
+    ------------------------- */
+
+    #status {
+      position: absolute;
+      z-index: 11;
+
+      top: 18px;
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      padding: 7px 13px;
+
+      border-radius: 999px;
+
+      background: rgba(10, 11, 16, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+
+      backdrop-filter: blur(12px);
+
+      color: rgba(255, 255, 255, 0.65);
+
+      font-size: 12px;
+      letter-spacing: 0.2px;
+
+      pointer-events: none;
+    }
+
+    /* -------------------------
+       SMALL SCREEN
+    ------------------------- */
+
+    @media (max-width: 600px) {
+      #chat {
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+      }
+
+      #messages {
+        max-height: 180px;
+      }
+
+      #composer {
+        gap: 6px;
+      }
+
+      #send {
+        padding: 0 15px;
+      }
+    }
+  </style>
+
+  <!-- IMPORTANT:
+       three-vrm imports "three", so the import map MUST
+       appear before the module script.
+  -->
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+
+<div id="app">
+
+  <div id="boot">
+    <div class="boot-card">
+
+      <div class="boot-title">
+        Yumi
+      </div>
+
+      <div class="boot-text" id="boot-text">
+        Preparing your companion...
+      </div>
+
+      <div id="progress">
+        <div id="progress-bar"></div>
+      </div>
+
+      <div id="boot-error"></div>
+
+    </div>
+  </div>
+
+  <div id="status">
+    Idle
+  </div>
+
+  <div id="chat">
+
+    <div id="messages"></div>
+
+    <div id="composer">
+
+      <input
+        id="message-input"
+        type="text"
+        placeholder="Talk to Yumi..."
+        autocomplete="off"
+      />
+
+      <button id="send">
+        Send
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<script type="module">
+
+/* =========================================================
+   IMPORTS
+========================================================= */
+
+import * as THREE from "three";
+
+import { OrbitControls } from
+  "three/addons/controls/OrbitControls.js";
+
+import { GLTFLoader } from
+  "three/addons/loaders/GLTFLoader.js";
+
+import {
+  VRMUtils,
+  VRMLoaderPlugin
+} from
+  "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@2.1.1/lib/three-vrm.module.js";
+
+
+/* =========================================================
+   BASIC SETUP
+========================================================= */
+
+const scene = new THREE.Scene();
+
+scene.background = new THREE.Color(0x08090d);
+
+
+const camera =
+  new THREE.PerspectiveCamera(
+    28,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    20
+  );
+
+
+/*
+  This camera position is intentionally closer to the model.
+
+  If Yumi looks too close/far away, change Z.
+*/
+camera.position.set(
+  0,
+  1.38,
+  2.45
+);
+
+
+const renderer =
+  new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: false
+  });
+
+
+renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
+
+renderer.setSize(
+  window.innerWidth,
+  window.innerHeight
+);
+
+renderer.outputColorSpace =
+  THREE.SRGBColorSpace;
+
+renderer.toneMapping =
+  THREE.ACESFilmicToneMapping;
+
+renderer.toneMappingExposure = 1.15;
+
+renderer.shadowMap.enabled = true;
+
+document
+  .getElementById("app")
+  .appendChild(renderer.domElement);
+
+
+/* =========================================================
+   CAMERA CONTROLS
+========================================================= */
+
+const controls =
+  new OrbitControls(
+    camera,
+    renderer.domElement
+  );
+
+controls.target.set(
+  0,
+  1.25,
+  0
+);
+
+controls.enableDamping = true;
+
+controls.dampingFactor = 0.07;
+
+controls.enablePan = false;
+
+controls.minDistance = 1.5;
+
+controls.maxDistance = 4.0;
+
+controls.minPolarAngle = 1.0;
+
+controls.maxPolarAngle = 1.8;
+
+
+/* =========================================================
+   LIGHTING
+========================================================= */
+
+const hemi =
+  new THREE.HemisphereLight(
+    0xffffff,
+    0x18121f,
+    2.2
+  );
+
+scene.add(hemi);
+
+
+const keyLight =
+  new THREE.DirectionalLight(
+    0xffffff,
+    3.0
+  );
+
+keyLight.position.set(
+  2,
+  4,
+  4
+);
+
+scene.add(keyLight);
+
+
+const fillLight =
+  new THREE.DirectionalLight(
+    0x8c7cff,
+    1.5
+  );
+
+fillLight.position.set(
+  -3,
+  2,
+  2
+);
+
+scene.add(fillLight);
+
+
+const rimLight =
+  new THREE.DirectionalLight(
+    0xff9acb,
+    1.3
+  );
+
+rimLight.position.set(
+  2,
+  3,
+  -4
+);
+
+scene.add(rimLight);
+
+
+/* =========================================================
+   GLOBAL STATE
+========================================================= */
+
+let currentVRM = null;
+
+let currentAudioEl = null;
+
+let audioContext = null;
+
+let analyser = null;
+
+let freqData = null;
+
+let animationState = "idle";
+
+let currentEmotion = "neutral";
+
+let gestureQueue = null;
+
+let lipSyncValue = 0;
+
+let isTalking = false;
+
+let lastTime = performance.now();
+
+
+/* =========================================================
+   MODEL ORIENTATION
+========================================================= */
+
+/*
+  Most VRM models face -Z.
+
+  If your model loads facing BACKWARD,
+  leave this at Math.PI.
+
+  If Yumi faces the wrong way after this file,
+  change Math.PI to 0.
+*/
+
+const MODEL_YAW_OFFSET = Math.PI;
+
+
+/* =========================================================
+   DEFAULT POSE
+========================================================= */
+
+const REST_POSE = {
+
+  leftUpperArm: {
+    x: 0,
+    y: 0,
+    z: 1.15
+  },
+
+  rightUpperArm: {
+    x: 0,
+    y: 0,
+    z: -1.15
+  },
+
+  leftLowerArm: {
+    x: 0,
+    y: 0,
+    z: 0.2
+  },
+
+  rightLowerArm: {
+    x: 0,
+    y: 0,
+    z: -0.2
+  }
+
+};
+
+
+/* =========================================================
+   BONE HELPERS
+========================================================= */
+
+function getBone(vrm, name) {
+
+  if (!vrm?.humanoid) {
+    return null;
+  }
+
+  try {
+
+    return vrm.humanoid
+      .getNormalizedBoneNode(name);
+
+  } catch (error) {
+
+    return null;
+
+  }
+
+}
+
+
+function safeRotation(
+  bone,
+  x,
+  y,
+  z
+) {
+
+  if (!bone) {
+    return;
+  }
+
+  bone.rotation.x = x;
+  bone.rotation.y = y;
+  bone.rotation.z = z;
+
+}
+
+
+/*
+  Smoothly move a rotation toward a target.
+*/
+
+function smoothRotation(
+  bone,
+  targetX,
+  targetY,
+  targetZ,
+  speed,
+  dt
+) {
+
+  if (!bone) {
+    return;
+  }
+
+  const amount =
+    1 - Math.exp(-speed * dt);
+
+  bone.rotation.x =
+    THREE.MathUtils.lerp(
+      bone.rotation.x,
+      targetX,
+      amount
+    );
+
+  bone.rotation.y =
+    THREE.MathUtils.lerp(
+      bone.rotation.y,
+      targetY,
+      amount
+    );
+
+  bone.rotation.z =
+    THREE.MathUtils.lerp(
+      bone.rotation.z,
+      targetZ,
+      amount
+    );
+
+}
+
+
+/* =========================================================
+   MODEL INSPECTION
+========================================================= */
+
+function inspectVRM(vrm) {
+
+  console.log(
+    "=============================="
+  );
+
+  console.log(
+    "YUMI VRM LOADED"
+  );
+
+  console.log(
+    "VRM:",
+    vrm
+  );
+
+  console.log(
+    "Humanoid:",
+    vrm.humanoid
+  );
+
+  console.log(
+    "LookAt:",
+    vrm.lookAt
+  );
+
+  console.log(
+    "Expression Manager:",
+    vrm.expressionManager
+  );
+
+  console.log(
+    "Expressions:",
+    vrm.expressionManager?.expressionMap
+  );
+
+
+  const boneNames = [
+
+    "hips",
+    "spine",
+    "chest",
+    "upperChest",
+    "neck",
+    "head",
+
+    "leftShoulder",
+    "leftUpperArm",
+    "leftLowerArm",
+    "leftHand",
+
+    "rightShoulder",
+    "rightUpperArm",
+    "rightLowerArm",
+    "rightHand"
+
+  ];
+
+
+  const result = {};
+
+
+  for (const name of boneNames) {
+
+    result[name] =
+      !!getBone(vrm, name);
+
+  }
+
+
+  console.table(result);
+
+  console.log(
+    "=============================="
+  );
+
+}
+
+
+/* =========================================================
+   FACE MODEL TOWARD CAMERA
+========================================================= */
+
+function faceCamera(vrm) {
+
+  if (!vrm?.scene) {
+    return;
+  }
+
+  vrm.scene.rotation.y =
+    MODEL_YAW_OFFSET;
+
+}
+
+
+/* =========================================================
+   EXPRESSIONS
+========================================================= */
+
+const EXPRESSION_MAP = {
+
+  neutral: "neutral",
+
+  happy: "happy",
+
+  sad: "sad",
+
+  angry: "angry",
+
+  surprised: "surprised",
+
+  relaxed: "relaxed"
+
+};
+
+
+function expressionExists(vrm, name) {
+
+  const em =
+    vrm?.expressionManager;
+
+  if (!em) {
+    return false;
+  }
+
+  try {
+
+    if (
+      em.expressionMap &&
+      em.expressionMap[name]
+    ) {
+
+      return true;
+
+    }
+
+  } catch {}
+
+  /*
+    Some VRM versions expose expressions
+    differently. We allow setValue() to
+    handle those cases.
+  */
+
+  return true;
+
+}
+
+
+function setExpression(
+  vrm,
+  expressionName,
+  value
+) {
+
+  const em =
+    vrm?.expressionManager;
+
+  if (!em) {
+    return;
+  }
+
+  if (
+    !expressionExists(
+      vrm,
+      expressionName
+    )
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    em.setValue(
+      expressionName,
+      THREE.MathUtils.clamp(
+        value,
+        0,
+        1
+      )
+    );
+
+  } catch {}
+
+}
+
+
+function updateExpressions(
+  vrm,
+  dt
+) {
+
+  const target =
+    EXPRESSION_MAP[currentEmotion]
+      || "neutral";
+
+
+  const names = [
+    "neutral",
+    "happy",
+    "sad",
+    "angry",
+    "surprised",
+    "relaxed"
+  ];
+
+
+  for (const name of names) {
+
+    const desired =
+      name === target
+        ? 1
+        : 0;
+
+    let current = 0;
+
+    try {
+
+      current =
+        vrm.expressionManager
+          ?.getValue(name) || 0;
+
+    } catch {}
+
+
+    const next =
+      THREE.MathUtils.lerp(
+        current,
+        desired,
+        1 - Math.exp(-7 * dt)
+      );
+
+
+    setExpression(
+      vrm,
+      name,
+      next
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   BLINKING
+========================================================= */
+
+let nextBlink =
+  performance.now() + 2500;
+
+let blinkStarted = false;
+
+let blinkProgress = 0;
+
+
+function scheduleBlink() {
+
+  nextBlink =
+    performance.now() +
+    2200 +
+    Math.random() * 4200;
+
+}
+
+
+function updateBlink(vrm) {
+
+  const now =
+    performance.now();
+
+
+  if (
+    !blinkStarted &&
+    now >= nextBlink
+  ) {
+
+    blinkStarted = true;
+
+    blinkProgress = 0;
+
+  }
+
+
+  if (blinkStarted) {
+
+    blinkProgress += 0.045;
+
+
+    /*
+      Smooth blink curve:
+      0 -> 1 -> 0
+    */
+
+    let value;
+
+    if (blinkProgress < 0.5) {
+
+      value =
+        blinkProgress * 2;
+
+    } else {
+
+      value =
+        1 -
+        (blinkProgress - 0.5) * 2;
+
+    }
+
+
+    value =
+      THREE.MathUtils.clamp(
+        value,
+        0,
+        1
+      );
+
+
+    setExpression(
+      vrm,
+      "blink",
+      value
+    );
+
+
+    /*
+      Some VRM models use blink_left /
+      blink_right instead.
+    */
+
+    setExpression(
+      vrm,
+      "blinkLeft",
+      value
+    );
+
+    setExpression(
+      vrm,
+      "blinkRight",
+      value
+    );
+
+
+    if (blinkProgress >= 1) {
+
+      blinkStarted = false;
+
+      blinkProgress = 0;
+
+      scheduleBlink();
+
+    }
+
+  }
+
+}
+
+
+/* =========================================================
+   IDLE ANIMATION
+========================================================= */
+
+function applyIdle(
+  vrm,
+  time,
+  dt
+) {
+
+  const hips =
+    getBone(vrm, "hips");
+
+  const spine =
+    getBone(vrm, "spine");
+
+  const chest =
+    getBone(vrm, "chest");
+
+  const upperChest =
+    getBone(vrm, "upperChest");
+
+  const neck =
+    getBone(vrm, "neck");
+
+  const head =
+    getBone(vrm, "head");
+
+
+  /*
+    Breathing.
+  */
+
+  const breath =
+    Math.sin(time * 1.7);
+
+
+  const breathSlow =
+    Math.sin(time * 0.85);
+
+
+  if (hips) {
+
+    smoothRotation(
+      hips,
+
+      0,
+
+      Math.sin(time * 0.65) * 0.012,
+
+      Math.sin(time * 0.8) * 0.008,
+
+      2.0,
+      dt
+    );
+
+  }
+
+
+  if (spine) {
+
+    smoothRotation(
+      spine,
+
+      breath * 0.012,
+
+      Math.sin(time * 0.55) * 0.012,
+
+      Math.sin(time * 0.7) * 0.009,
+
+      3,
+      dt
+    );
+
+  }
+
+
+  if (chest) {
+
+    smoothRotation(
+      chest,
+
+      breath * 0.025,
+
+      Math.sin(time * 0.42) * 0.015,
+
+      Math.sin(time * 0.58) * 0.012,
+
+      3,
+      dt
+    );
+
+  }
+
+
+  if (upperChest) {
+
+    smoothRotation(
+      upperChest,
+
+      breath * 0.035,
+
+      Math.sin(time * 0.42) * 0.018,
+
+      0,
+
+      3,
+      dt
+    );
+
+  }
+
+
+  /*
+    Natural head movement.
+  */
+
+  if (head) {
+
+    smoothRotation(
+      head,
+
+      Math.sin(time * 0.72) * 0.025,
+
+      Math.sin(time * 0.43) * 0.045,
+
+      Math.sin(time * 0.56) * 0.025,
+
+      2.2,
+      dt
+    );
+
+  }
+
+
+  if (neck) {
+
+    smoothRotation(
+      neck,
+
+      Math.sin(time * 0.65) * 0.012,
+
+      Math.sin(time * 0.45) * 0.035,
+
+      Math.sin(time * 0.58) * 0.018,
+
+      2,
+      dt
+    );
+
+  }
+
+
+  /*
+    Tiny arm relaxation.
+  */
+
+  const leftArm =
+    getBone(
+      vrm,
+      "leftUpperArm"
+    );
+
+  const rightArm =
+    getBone(
+      vrm,
+      "rightUpperArm"
+    );
+
+
+  if (leftArm) {
+
+    smoothRotation(
+      leftArm,
+
+      0,
+      Math.sin(time * 0.7) * 0.01,
+      REST_POSE.leftUpperArm.z +
+        Math.sin(time * 0.8) * 0.025,
+
+      2,
+      dt
+    );
+
+  }
+
+
+  if (rightArm) {
+
+    smoothRotation(
+      rightArm,
+
+      0,
+      Math.sin(time * 0.7 + 1) * 0.01,
+      REST_POSE.rightUpperArm.z +
+        Math.sin(time * 0.8 + 1) * 0.025,
+
+      2,
+      dt
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   THINKING ANIMATION
+========================================================= */
+
+function applyThinking(
+  vrm,
+  time,
+  dt
+) {
+
+  const head =
+    getBone(vrm, "head");
+
+  const neck =
+    getBone(vrm, "neck");
+
+  const rightUpperArm =
+    getBone(
+      vrm,
+      "rightUpperArm"
+    );
+
+  const rightLowerArm =
+    getBone(
+      vrm,
+      "rightLowerArm"
+    );
+
+
+  if (head) {
+
+    smoothRotation(
+      head,
+
+      0.025 +
+        Math.sin(time * 1.2) * 0.018,
+
+      0.02,
+
+      -0.06 +
+        Math.sin(time * 1.0) * 0.025,
+
+      4,
+      dt
+    );
+
+  }
+
+
+  if (neck) {
+
+    smoothRotation(
+      neck,
+
+      0,
+
+      0.03,
+
+      -0.025,
+
+      4,
+      dt
+    );
+
+  }
+
+
+  if (rightUpperArm) {
+
+    smoothRotation(
+      rightUpperArm,
+
+      -0.05,
+
+      0,
+
+      -0.72,
+
+      4,
+      dt
+    );
+
+  }
+
+
+  if (rightLowerArm) {
+
+    smoothRotation(
+      rightLowerArm,
+
+      0,
+
+      0,
+
+      -1.05 +
+        Math.sin(time * 2) * 0.05,
+
+      4,
+      dt
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   TALKING BODY ANIMATION
+========================================================= */
+
+function applyTalking(
+  vrm,
+  time,
+  dt
+) {
+
+  const chest =
+    getBone(vrm, "chest");
+
+  const upperChest =
+    getBone(vrm, "upperChest");
+
+  const head =
+    getBone(vrm, "head");
+
+  const neck =
+    getBone(vrm, "neck");
+
+  const hips =
+    getBone(vrm, "hips");
+
+
+  /*
+    Small natural body rhythm while speaking.
+  */
+
+  const speech =
+    Math.sin(time * 5.2) *
+    0.006;
+
+
+  if (chest) {
+
+    smoothRotation(
+      chest,
+
+      speech,
+
+      Math.sin(time * 2.1) * 0.012,
+
+      Math.sin(time * 2.7) * 0.008,
+
+      5,
+      dt
+    );
+
+  }
+
+
+  if (upperChest) {
+
+    smoothRotation(
+      upperChest,
+
+      speech * 1.5,
+
+      Math.sin(time * 1.7) * 0.008,
+
+      0,
+
+      4,
+      dt
+    );
+
+  }
+
+
+  if (head) {
+
+    smoothRotation(
+      head,
+
+      Math.sin(time * 2.4) * 0.014,
+
+      Math.sin(time * 1.7) * 0.025,
+
+      Math.sin(time * 1.9) * 0.012,
+
+      3,
+      dt
+    );
+
+  }
+
+
+  if (neck) {
+
+    smoothRotation(
+      neck,
+
+      0,
+
+      Math.sin(time * 1.5) * 0.02,
+
+      Math.sin(time * 1.3) * 0.01,
+
+      3,
+      dt
+    );
+
+  }
+
+
+  if (hips) {
+
+    smoothRotation(
+      hips,
+
+      0,
+
+      Math.sin(time * 0.8) * 0.006,
+
+      0,
+
+      2,
+      dt
+    );
+
+  }
+
+}
+
+
+/* =========================================================
+   GESTURES
+========================================================= */
+
+function playGesture(
+  type
+) {
+
+  if (
+    !type ||
+    type === "none"
+  ) {
+
+    return;
+
+  }
+
+
+  gestureQueue = {
+
+    type,
+    start: performance.now(),
+    duration:
+      gestureDuration(type)
+
+  };
+
+}
+
+
+function gestureDuration(
+  type
+) {
+
+  switch (type) {
+
+    case "wave":
+      return 1800;
+
+    case "nod":
+      return 1100;
+
+    case "think":
+      return 1900;
+
+    case "laugh":
+      return 1500;
+
+    case "shrug":
+      return 1200;
+
+    default:
+      return 1000;
+
+  }
+
+}
+
+
+/*
+  Smoothly returns arms to the relaxed pose.
+*/
+
+function relaxArms(
+  vrm,
+  dt
+) {
+
+  const leftUpperArm =
+    getBone(
+      vrm,
+      "leftUpperArm"
+    );
+
+  const rightUpperArm =
+    getBone(
+      vrm,
+      "rightUpperArm"
+    );
+
+  const leftLowerArm =
+    getBone(
+      vrm,
+      "leftLowerArm"
+    );
+
+  const rightLowerArm =
+    getBone(
+      vrm,
+      "rightLowerArm"
+    );
+
+
+  if (leftUpperArm) {
+
+    smoothRotation(
+      leftUpperArm,
+      0,
+      0,
+      REST_POSE.leftUpperArm.z,
+      5,
+      dt
+    );
+
+  }
+
+
+  if (rightUpperArm) {
+
+    smoothRotation(
+      rightUpperArm,
+      0,
+      0,
+      REST_POSE.rightUpperArm.z,
+      5,
+      dt
+    );
+
+  }
+
+
+  if (leftLowerArm) {
+
+    smoothRotation(
+      leftLowerArm,
+      0,
+      0,
+      REST_POSE.leftLowerArm.z,
+      5,
+      dt
+    );
+
+  }
+
+
+  if (rightLowerArm) {
+
+    smoothRotation(
+      rightLowerArm,
+      0,
+      0,
+      REST_POSE.rightLowerArm.z,
+      5,
+      dt
+    );
+
+  }
+
+}
+
+
+function applyGesture(
+  vrm,
+  time,
+  dt
+) {
+
+  if (!gestureQueue) {
+
+    relaxArms(vrm, dt);
+
+    return;
+
+  }
+
+
+  const elapsed =
+    performance.now() -
+    gestureQueue.start;
+
+
+  const progress =
+    THREE.MathUtils.clamp(
+      elapsed /
+      gestureQueue.duration,
+      0,
+      1
+    );
+
+
+  const type =
+    gestureQueue.type;
+
+
+  const ease =
+    Math.sin(
+      progress * Math.PI
+    );
+
+
+  const head =
+    getBone(vrm, "head");
+
+  const chest =
+    getBone(vrm, "chest");
+
+  const rightUpperArm =
+    getBone(
+      vrm,
+      "rightUpperArm"
+    );
+
+  const rightLowerArm =
+    getBone(
+      vrm,
+      "rightLowerArm"
+    );
+
+  const leftUpperArm =
+    getBone(
+      vrm,
+      "leftUpperArm"
+    );
+
+  const leftLowerArm =
+    getBone(
+      vrm,
+      "leftLowerArm"
+    );
+
+
+  /* -------------------------
+     WAVE
+  ------------------------- */
+
+  if (type === "wave") {
+
+    if (rightUpperArm) {
+
+      smoothRotation(
+        rightUpperArm,
+
+        -0.1 * ease,
+
+        0,
+
+        -1.15 -
+          0.75 * ease,
+
+        10,
+        dt
+      );
+
+    }
+
+
+    if (rightLowerArm) {
+
+      smoothRotation(
+        rightLowerArm,
+
+        0,
+
+        Math.sin(
+          progress * Math.PI * 6
+        ) * 0.15,
+
+        -0.25 -
+          0.3 * ease,
+
+        10,
+        dt
+      );
+
+    }
+
+  }
+
+
+  /* -------------------------
+     NOD
+  ------------------------- */
+
+  else if (type === "nod") {
+
+    relaxArms(vrm, dt);
+
+
+    if (head) {
+
+      smoothRotation(
+        head,
+
+        Math.sin(
+          progress * Math.PI * 4
+        ) * 0.15 * ease,
+
+        0,
+
+        0,
+
+        10,
+        dt
+      );
+
+    }
+
+  }
+
+
+  /* -------------------------
+     THINK
+  ------------------------- */
+
+  else if (type === "think") {
+
+    if (rightUpperArm) {
+
+      smoothRotation(
+        rightUpperArm,
+
+        -0.1,
+
+        0,
+
+        -0.75,
+
+        8,
+        dt
+      );
+
+    }
+
+
+    if (rightLowerArm) {
+
+      smoothRotation(
+        rightLowerArm,
+
+        0,
+
+        0,
+
+        -1.05,
+
+        8,
+        dt
+      );
+
+    }
+
+
+    if (head) {
+
+      smoothRotation(
+        head,
+
+        0.02,
+
+        0.02,
+
+        -0.07,
+
+        6,
+        dt
+      );
+
+    }
+
+  }
+
+
+  /* -------------------------
+     LAUGH
+  ------------------------- */
+
+  else if (type === "laugh") {
+
+    relaxArms(vrm, dt);
+
+
+    if (chest) {
+
+      smoothRotation(
+        chest,
+
+        Math.sin(
+          progress * Math.PI * 6
+        ) * 0.055 * ease,
+
+        0,
+
+        0,
+
+        10,
+        dt
+      );
+
+    }
+
+
+    if (head) {
+
+      smoothRotation(
+        head,
+
+        Math.sin(
+          progress * Math.PI * 6
+        ) * 0.045 * ease,
+
+        0,
+
+        0,
+
+        10,
+        dt
+      );
+
+    }
+
+
+    setExpression(
+      vrm,
+      "happy",
+      0.7 * ease
+    );
+
+  }
+
+
+  /* -------------------------
+     SHRUG
+  ------------------------- */
+
+  else if (type === "shrug") {
+
+    if (leftUpperArm) {
+
+      smoothRotation(
+        leftUpperArm,
+
+        0,
+
+        0,
+
+        0.55 * ease,
+
+        8,
+        dt
+      );
+
+    }
+
+
+    if (rightUpperArm) {
+
+      smoothRotation(
+        rightUpperArm,
+
+        0,
+
+        0,
+
+        -0.55 * ease,
+
+        8,
+        dt
+      );
+
+    }
+
+
+    if (leftLowerArm) {
+
+      smoothRotation(
+        leftLowerArm,
+
+        0,
+
+        0,
+
+        0.05,
+
+        8,
+        dt
+      );
+
+    }
+
+
+    if (rightLowerArm) {
+
+      smoothRotation(
+        rightLowerArm,
+
+        0,
+
+        0,
+
+        -0.05,
+
+        8,
+        dt
+      );
+
+    }
+
+  }
+
+
+  /*
+    Gesture finished.
+  */
+
+  if (progress >= 1) {
+
+    gestureQueue = null;
+
+  }
+
+}
+
+
+/* =========================================================
+   AUDIO / LIP SYNC
+========================================================= */
+
+function setupAudioAnalyser(
+  audio
+) {
+
+  try {
+
+    if (!audioContext) {
+
+      audioContext =
+        new (
+          window.AudioContext ||
+          window.webkitAudioContext
+        )();
+
+    }
+
+
+    if (
+      audioContext.state ===
+      "suspended"
+    ) {
+
+      audioContext.resume();
+
+    }
+
+
+    if (analyser) {
+
+      try {
+
+        analyser.disconnect();
+
+      } catch {}
+
+    }
+
+
+    const source =
+      audioContext.createMediaElementSource(
+        audio
+      );
+
+
+    analyser =
+      audioContext.createAnalyser();
+
+
+    analyser.fftSize = 512;
+
+    analyser.smoothingTimeConstant =
+      0.65;
+
+
+    source.connect(analyser);
+
+    analyser.connect(
+      audioContext.destination
+    );
+
+
+    freqData =
+      new Uint8Array(
+        analyser.frequencyBinCount
+      );
+
+
+  } catch (error) {
+
+    console.warn(
+      "Audio analyser setup failed:",
+      error
+    );
+
+    analyser = null;
+
+  }
+
+}
+
+
+/*
+  This is an improved heuristic lip-sync system.
+
+  It does NOT know the actual phonemes being spoken.
+
+  It analyzes the audio energy and creates several
+  mouth-shape patterns instead of simply opening "aa".
+*/
+
+function applyLipSync(
+  vrm,
+  dt
+) {
+
+  const em =
+    vrm?.expressionManager;
+
+  if (!em) {
+    return;
+  }
+
+
+  let volume = 0;
+
+
+  if (
+    analyser &&
+    currentAudioEl &&
+    !currentAudioEl.paused &&
+    !currentAudioEl.ended
+  ) {
+
+    analyser.getByteFrequencyData(
+      freqData
+    );
+
+
+    /*
+      Focus on voice frequencies instead
+      of the entire spectrum.
+    */
+
+    const start =
+      Math.floor(
+        freqData.length * 0.02
+      );
+
+
+    const end =
+      Math.floor(
+        freqData.length * 0.5
+      );
+
+
+    let sum = 0;
+
+    let count = 0;
+
+
+    for (
+      let i = start;
+      i < end;
+      i++
+    ) {
+
+      sum += freqData[i];
+
+      count++;
+
+    }
+
+
+    const average =
+      count > 0
+        ? sum / count
+        : 0;
+
+
+    volume =
+      THREE.MathUtils.clamp(
+        (average - 10) / 55,
+        0,
+        1
+      );
+
+  }
+
+
+  /*
+    Smooth mouth movement.
+  */
+
+  lipSyncValue =
+    THREE.MathUtils.lerp(
+      lipSyncValue,
+      volume,
+      1 -
+        Math.exp(
+          -18 * dt
+        )
+    );
+
+
+  if (
+    !currentAudioEl ||
+    currentAudioEl.paused ||
+    currentAudioEl.ended
+  ) {
+
+    lipSyncValue =
+      THREE.MathUtils.lerp(
+        lipSyncValue,
+        0,
+        1 -
+          Math.exp(
+            -14 * dt
+          )
+      );
+
+  }
+
+
+  const t =
+    performance.now() *
+    0.007;
+
+
+  /*
+    Multiple pseudo-visemes.
+
+    These overlap naturally rather than
+    creating one giant mouth opening.
+  */
+
+  const waveA =
+    Math.max(
+      0,
+      Math.sin(t)
+    );
+
+
+  const waveB =
+    Math.max(
+      0,
+      Math.sin(
+        t * 1.37 +
+        1.1
+      )
+    );
+
+
+  const waveC =
+    Math.max(
+      0,
+      Math.sin(
+        t * 0.73 +
+        2.4
+      )
+    );
+
+
+  const waveD =
+    Math.max(
+      0,
+      Math.sin(
+        t * 1.91 +
+        3.0
+      )
+    );
+
+
+  const open =
+    lipSyncValue;
+
+
+  const aa =
+    open *
+    (
+      0.25 +
+      0.32 * waveA
+    );
+
+
+  const ih =
+    open *
+    (
+      0.08 +
+      0.22 * waveB
+    );
+
+
+  const oh =
+    open *
+    (
+      0.06 +
+      0.20 * waveC
+    );
+
+
+  const ee =
+    open *
+    (
+      0.04 +
+      0.16 * waveD
+    );
+
+
+  const ou =
+    open *
+    (
+      0.03 +
+      0.12 *
+      Math.max(
+        0,
+        Math.sin(t * 0.5)
+      )
+    );
+
+
+  setExpression(
+    vrm,
+    "aa",
+    aa
+  );
+
+
+  setExpression(
+    vrm,
+    "ih",
+    ih
+  );
+
+
+  setExpression(
+    vrm,
+    "oh",
+    oh
+  );
+
+
+  setExpression(
+    vrm,
+    "ee",
+    ee
+  );
+
+
+  setExpression(
+    vrm,
+    "ou",
+    ou
+  );
+
+}
+
+
+/* =========================================================
+   AUDIO PLAYBACK
+========================================================= */
+
+function stopCurrentAudio() {
+
+  if (!currentAudioEl) {
+    return;
+  }
+
+
+  try {
+
+    currentAudioEl.pause();
+
+  } catch {}
+
+
+  currentAudioEl = null;
+
+  analyser = null;
+
+  lipSyncValue = 0;
+
+  isTalking = false;
+
+}
+
+
+function playAudio(
+  dataUri
+) {
+
+  if (!dataUri) {
+
+    setAnimationState(
+      "idle"
+    );
+
+    return;
+
+  }
+
+
+  stopCurrentAudio();
+
+
+  const audio =
+    new Audio();
+
+
+  audio.preload = "auto";
+
+  audio.src = dataUri;
+
+
+  currentAudioEl = audio;
+
+
+  setupAudioAnalyser(
+    audio
+  );
+
+
+  audio.onplay = () => {
+
+    isTalking = true;
+
+    setAnimationState(
+      "talking"
+    );
+
+  };
+
+
+  audio.onended = () => {
+
+    isTalking = false;
+
+    lipSyncValue = 0;
+
+    currentAudioEl = null;
+
+    analyser = null;
+
+    setAnimationState(
+      "idle"
+    );
+
+  };
+
+
+  audio.onerror = (error) => {
+
+    console.warn(
+      "Audio playback error:",
+      error
+    );
+
+    isTalking = false;
+
+    currentAudioEl = null;
+
+    analyser = null;
+
+    setAnimationState(
+      "idle"
+    );
+
+  };
+
+
+  audio.play()
+    .catch(error => {
+
+      console.warn(
+        "Audio autoplay failed:",
+        error
+      );
+
+      isTalking = false;
+
+      setAnimationState(
+        "idle"
+      );
+
+    });
+
+}
+
+
+/* =========================================================
+   ANIMATION STATE
+========================================================= */
+
+function setAnimationState(
+  state
+) {
+
+  animationState =
+    state;
+
+
+  const status =
+    document.getElementById(
+      "status"
+    );
+
+
+  if (!status) {
+    return;
+  }
+
+
+  switch (state) {
+
+    case "talking":
+
+      status.textContent =
+        "Yumi is talking";
+
+      break;
+
+
+    case "thinking":
+
+      status.textContent =
+        "Yumi is thinking...";
+
+      break;
+
+
+    default:
+
+      status.textContent =
+        "Yumi";
+
+      break;
+
+  }
+
+}
+
+
+/* =========================================================
+   CHAT UI
+========================================================= */
+
+function addMessage(
+  text,
+  type
+) {
+
+  const messages =
+    document.getElementById(
+      "messages"
+    );
+
+
+  const div =
+    document.createElement(
+      "div"
+    );
+
+
+  div.className =
+    "message " +
+    type;
+
+
+  div.textContent =
+    text;
+
+
+  messages.appendChild(
+    div
+  );
+
+
+  messages.scrollTop =
+    messages.scrollHeight;
+
+}
+
+
+/* =========================================================
+   CHAT
+========================================================= */
+
+async function sendMessage() {
+
+  const input =
+    document.getElementById(
+      "message-input"
+    );
+
+
+  const sendButton =
+    document.getElementById(
+      "send"
+    );
+
+
+  const text =
+    input.value.trim();
+
+
+  if (!text) {
+    return;
+  }
+
+
+  addMessage(
+    text,
+    "user"
+  );
+
+
+  input.value = "";
+
+  sendButton.disabled =
+    true;
+
+
+  /*
+    Thinking animation starts
+    immediately.
+  */
+
+  setAnimationState(
+    "thinking"
+  );
+
+  playGesture(
+    "think"
+  );
+
+
+  try {
+
+    const response =
+      await fetch(
+        "/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify({
+              message: text
+            })
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Server returned " +
+        response.status
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    /*
+      Add Yumi's response.
+    */
+
+    addMessage(
+      data.reply ||
+        "...",
+      "yumi"
+    );
+
+
+    /*
+      Emotion.
+    */
+
+    currentEmotion =
+      data.emotion ||
+      "neutral";
+
+
+    /*
+      Gesture.
+    */
+
+    if (
+      data.gesture &&
+      data.gesture !== "none"
+    ) {
+
+      playGesture(
+        data.gesture
+      );
+
+    }
+
+
+    /*
+      Voice.
+    */
+
+    if (data.audio) {
+
+      playAudio(
+        data.audio
+      );
+
+    } else {
+
+      setAnimationState(
+        "idle"
+      );
+
+    }
+
+
+  } catch (error) {
+
+    console.error(
+      "Chat error:",
+      error
+    );
+
+
+    addMessage(
+      "I couldn't connect to Yumi's backend.",
+      "yumi"
+    );
+
+
+    setAnimationState(
+      "idle"
+    );
+
+  }
+
+
+  sendButton.disabled =
+    false;
+
+
+  input.focus();
+
+}
+
+
+/* =========================================================
+   INPUT EVENTS
+========================================================= */
+
+document
+  .getElementById("send")
+  .addEventListener(
+    "click",
+    sendMessage
+  );
+
+
+document
+  .getElementById(
+    "message-input"
+  )
+  .addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key ===
+        "Enter"
+      ) {
+
+        sendMessage();
+
+      }
+
+    }
+  );
+
+
+/* =========================================================
+   VRM LOADER
+========================================================= */
+
+const loader =
+  new GLTFLoader();
+
+
+loader.register(
+  parser =>
+    new VRMLoaderPlugin(
+      parser
+    )
+);
+
+
+loader.load(
+
+  "/static/yumi.vrm",
+
+  gltf => {
+
+    try {
+
+      const vrm =
+        gltf.userData.vrm;
+
+
+      if (!vrm) {
+
+        throw new Error(
+          "VRM loader did not return a VRM object."
+        );
+
+      }
+
+
+      /*
+        Clean unnecessary geometry.
+      */
+
+      VRMUtils
+        .removeUnnecessaryVertices(
+          gltf.scene
+        );
+
+
+      VRMUtils
+        .removeUnnecessaryJoints(
+          gltf.scene
+        );
+
+
+      /*
+        Prevent clipping.
+      */
+
+      vrm.scene.traverse(
+        object => {
+
+          object.frustumCulled =
+            false;
+
+          if (
+            object.isMesh
+          ) {
+
+            object.castShadow =
+              true;
+
+            object.receiveShadow =
+              true;
+
+          }
+
+        }
+      );
+
+
+      /*
+        Face the camera.
+      */
+
+      faceCamera(vrm);
+
+
+      /*
+        Add model.
+      */
+
+      scene.add(
+        vrm.scene
+      );
+
+
+      currentVRM =
+        vrm;
+
+
+      /*
+        Inspect the model in
+        browser console.
+      */
+
+      inspectVRM(vrm);
+
+
+      /*
+        Start clean.
+      */
+
+      currentEmotion =
+        "neutral";
+
+
+      animationState =
+        "idle";
+
+
+      scheduleBlink();
+
+
+      /*
+        Hide boot screen.
+      */
+
+      document
+        .getElementById(
+          "boot"
+        )
+        .style.display =
+        "none";
+
+
+      console.log(
+        "Yumi is ready."
+      );
+
+
+    } catch (error) {
+
+      console.error(
+        "VRM setup error:",
+        error
+      );
+
+
+      showBootError(
+        error.message
+      );
+
+    }
+
+  },
+
+
+  progress => {
+
+    if (
+      progress.total > 0
+    ) {
+
+      const percent =
+        (
+          progress.loaded /
+          progress.total
+        ) * 100;
+
+
+      document
+        .getElementById(
+          "progress-bar"
+        )
+        .style.width =
+        percent + "%";
+
+
+      document
+        .getElementById(
+          "boot-text"
+        )
+        .textContent =
+        "Loading Yumi... " +
+        Math.round(percent) +
+        "%";
+
+    }
+
+  },
+
+
+  error => {
+
+    console.error(
+      "VRM loading failed:",
+      error
+    );
+
+
+    showBootError(
+      "Could not load /static/yumi.vrm. Check that the file exists."
+    );
+
+  }
+
+);
+
+
+/* =========================================================
+   BOOT ERROR
+========================================================= */
+
+function showBootError(
+  message
+) {
+
+  const error =
+    document.getElementById(
+      "boot-error"
+    );
+
+
+  error.style.display =
+    "block";
+
+
+  error.textContent =
+    message;
+
+}
+
+
+/* =========================================================
+   RESIZE
+========================================================= */
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    camera.aspect =
+      window.innerWidth /
+      window.innerHeight;
+
+
+    camera.updateProjectionMatrix();
+
+
+    renderer.setSize(
+      window.innerWidth,
+      window.innerHeight
+    );
+
+  }
+);
+
+
+/* =========================================================
+   RENDER LOOP
+========================================================= */
+
+function animate() {
+
+  requestAnimationFrame(
+    animate
+  );
+
+
+  const now =
+    performance.now();
+
+
+  const dt =
+    Math.min(
+      (now - lastTime) /
+      1000,
+      0.05
+    );
+
+
+  lastTime =
+    now;
+
+
+  const time =
+    now / 1000;
+
+
+  if (currentVRM) {
+
+    /*
+      Expressions and blinking.
+    */
+
+    updateExpressions(
+      currentVRM,
+      dt
+    );
+
+
+    updateBlink(
+      currentVRM
+    );
+
+
+    /*
+      IMPORTANT:
+
+      Only ONE base animation layer
+      controls the body at a time.
+
+      This prevents idle, thinking and
+      talking from fighting each other.
+    */
+
+    if (
+      animationState ===
+      "talking"
+    ) {
+
+      applyTalking(
+        currentVRM,
+        time,
+        dt
+      );
+
+    }
+
+    else if (
+      animationState ===
+      "thinking"
+    ) {
+
+      applyThinking(
+        currentVRM,
+        time,
+        dt
+      );
+
+    }
+
+    else {
+
+      applyIdle(
+        currentVRM,
+        time,
+        dt
+      );
+
+    }
+
+
+    /*
+      Gesture is an additional layer.
+    */
+
+    applyGesture(
+      currentVRM,
+      time,
+      dt
+    );
+
+
+    /*
+      Mouth animation.
+    */
+
+    applyLipSync(
+      currentVRM,
+      dt
+    );
+
+
+    /*
+      VRM internal update.
+    */
+
+    currentVRM.update(
+      dt
+    );
+
+  }
+
+
+  controls.update();
+
+
+  renderer.render(
+    scene,
+    camera
+  );
+
+}
+
+
+animate();
+
+
+/* =========================================================
+   INITIAL MESSAGE
+========================================================= */
+
+addMessage(
+  "Hi! I'm Yumi. ✨",
+  "yumi"
+);
+
+</script>
+
+</body>
+</html>
