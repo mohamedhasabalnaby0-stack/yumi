@@ -1,0 +1,8 @@
+google-genai>=1,<2
+elevenlabs>=2,<3
+faiss-cpu>=1.8,<2
+numpy>=1.26,<3
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+pydantic>=2,<3
+python-dotenv>=1,<2

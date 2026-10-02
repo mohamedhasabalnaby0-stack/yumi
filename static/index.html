@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Yumi · Companion</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script type="importmap">
+  {"imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }}
+  </script>
+</head>
+<body>
+  <main id="app" aria-label="Yumi companion">
+    <div id="stage" aria-label="Interactive 3D avatar"></div>
+    <header class="topbar">
+      <div class="brand"><span class="orb" aria-hidden="true"></span>Yumi <span class="tag">COMPANION</span></div>
+      <div id="status" role="status">Loading avatar…</div>
+      <button id="settings-toggle" aria-expanded="false" aria-controls="settings">Controls</button>
+    </header>
+    <aside id="settings" class="panel" hidden aria-label="Avatar controls">
+      <h2>Make yourself comfortable</h2>
+      <label>Camera <select id="camera-view"><option value="portrait">Portrait</option><option value="full">Full body</option></select></label>
+      <label><input id="motion" type="checkbox" checked> Body animations</label>
+      <label><input id="gaze" type="checkbox" checked> Follow pointer with eyes</label>
+      <label><input id="mute" type="checkbox"> Mute voice</label>
+      <label>Voice volume <input id="volume" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+      <label>Preview gesture <select id="gesture"><option value="wave">Wave</option><option value="nod">Nod</option><option value="think">Thinking</option><option value="laugh">Laugh</option><option value="shrug">Shrug</option></select></label>
+      <button id="preview" disabled>Play gesture</button>
+      <p>Original keyframed clips with blended transitions—not motion capture.</p>
+      <p id="diagnostics" role="status">Checking server…</p>
+      <p id="rig-status"></p>
+    </aside>
+    <section id="boot" aria-label="Loading avatar">
+      <div class="boot-card panel">
+        <div class="boot-mark" aria-hidden="true">Y</div>
+        <h1>A little presence.<br>A little personality.</h1>
+        <p id="boot-text">Preparing Yumi…</p>
+        <progress id="progress" max="100" aria-label="Avatar loading"></progress>
+        <p id="boot-error" role="alert" hidden></p>
+        <button id="retry" hidden>Retry loading</button>
+      </div>
+    </section>
+    <section id="chat" aria-label="Conversation">
+      <div id="messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+      <div class="speech-tools">
+        <span id="sync-status">Voice ready when configured</span>
+        <button id="replay" disabled>Replay voice</button>
+        <button id="stop" disabled>Stop voice</button>
+      </div>
+      <form id="composer">
+        <label class="sr-only" for="message-input">Message Yumi</label>
+        <input id="message-input" name="message" placeholder="Talk to Yumi…" autocomplete="off" maxlength="2000" required>
+        <button id="send" type="submit">Send <span aria-hidden="true">↗</span></button>
+      </form>
+      <p class="hint">Local, single-user companion · drag to orbit · scroll to zoom</p>
+    </section>
+  </main>
+  <script type="module">
+    import('/static/avatar.mjs').catch(error => {
+      console.error('Avatar startup failed:', error);
+      const message = document.getElementById('boot-error');
+      message.textContent = 'Could not start the 3D scene. Check WebGL support and access to the module CDNs, then retry.';
+      message.hidden = false;
+      document.getElementById('retry').hidden = false;
+    });
+    document.getElementById('retry').addEventListener('click', () => location.reload());
+  </script>
+</body>
+</html>
